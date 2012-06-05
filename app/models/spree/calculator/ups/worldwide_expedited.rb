@@ -1,7 +1,7 @@
 module Spree
   class Calculator < ActiveRecord::Base
     module Ups
-      class WorldwideExpedited < Calculator::Ups::Base
+      class WorldwideExpedited < Spree::Calculator::Ups::Base
         def self.description
           I18n.t("ups.worldwide_expedited")
         end

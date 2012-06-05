@@ -1,7 +1,7 @@
 module Spree
   class Calculator < ActiveRecord::Base
     module Ups
-      class NextDayAir < Calculator::Ups::Base
+      class NextDayAir < Spree::Calculator::Ups::Base
         def self.description
           I18n.t("ups.next_day_air")
         end

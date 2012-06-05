@@ -1,7 +1,7 @@
 module Spree
   class Calculator < ActiveRecord::Base
     module Usps
-      class ExpressMailInternational < Calculator::Usps::Base
+      class ExpressMailInternational < Spree::Calculator::Usps::Base
         def self.description
           I18n.t("usps.express_mail_intl")
         end

@@ -1,7 +1,7 @@
 module Spree
   class Calculator < ActiveRecord::Base
     module Fedex
-      class PriorityOvernight < Calculator::Fedex::Base
+      class PriorityOvernight < Spree::Calculator::Fedex::Base
         def self.description
           I18n.t("fedex.priority_overnight")
         end
