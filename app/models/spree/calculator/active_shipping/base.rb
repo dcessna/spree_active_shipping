@@ -6,7 +6,7 @@ require 'digest/md5'
 module Spree
   class Calculator < ActiveRecord::Base
     module ActiveShipping
-      class Base < Calculator
+      class Base < Spree::Calculator
         include ActiveMerchant::Shipping
 
         def self.service_name
