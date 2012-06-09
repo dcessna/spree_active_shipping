@@ -21,10 +21,7 @@ module Spree
           else
             order = object
           end
-          origin= Location.new(:country => Spree::ActiveShipping::Config[:origin_country],
-                               :city => Spree::ActiveShipping::Config[:origin_city],
-                               :state => Spree::ActiveShipping::Config[:origin_state],
-                               :zip => Spree::ActiveShipping::Config[:origin_zip])
+          origin = package_origin
 
           addr = order.ship_address
 
@@ -34,7 +31,7 @@ module Spree
                                      :zip => addr.zipcode)
 
           rates = Rails.cache.fetch(cache_key(order)) do
-            rates = retrieve_rates(origin, destination, packages(order))
+            rates = retrieve_rates(origin, destination, package(order))
           end
 
           return nil if rates.empty?
@@ -49,17 +46,14 @@ module Spree
 
         def timing(line_items)
           order = line_items.first.order
-          origin      = Location.new(:country => Spree::ActiveShipping::Config[:origin_country],
-                                     :city => Spree::ActiveShipping::Config[:origin_city],
-                                     :state => Spree::ActiveShipping::Config[:origin_state],
-                                     :zip => Spree::ActiveShipping::Config[:origin_zip])
+          origin      = package_origin
           addr = order.ship_address
           destination = Location.new(:country => addr.country.iso,
                                      :state => (addr.state ? addr.state.abbr : addr.state_name),
                                      :city => addr.city,
                                      :zip => addr.zipcode)
           timings = Rails.cache.fetch(cache_key(order)+"-timings") do
-            timings = retrieve_timings(origin, destination, packages(order))
+            timings = retrieve_timings(origin, destination, package(order))
           end
           return nil if timings.nil? || !timings.is_a?(Hash) || timings.empty?
           return timings[self.description]
@@ -67,9 +61,17 @@ module Spree
         end
 
         private
-        def retrieve_rates(origin, destination, packages)
+        
+        def package_origin
+          Location.new(:country => Spree::ActiveShipping::Config[:origin_country],
+                       :city => Spree::ActiveShipping::Config[:origin_city],
+                       :state => Spree::ActiveShipping::Config[:origin_state],
+                       :zip => Spree::ActiveShipping::Config[:origin_zip])
+        end
+        
+        def retrieve_rates(origin, destination, package)
           begin
-            response = carrier.find_rates(origin, destination, packages)
+            response = carrier.find_rates(origin, destination, [package])
             # turn this beastly array into a nice little hash
             rate_hash = Hash[*response.rates.collect { |rate| [rate.service_name, rate.price] }.flatten]
             return rate_hash
@@ -94,10 +96,10 @@ module Spree
         end
 
 
-        def retrieve_timings(origin, destination, packages)
+        def retrieve_timings(origin, destination, package)
           begin
             if carrier.respond_to?(:find_time_in_transit)
-              response = carrier.find_time_in_transit(origin, destination, packages)
+              response = carrier.find_time_in_transit(origin, destination, [package])
               return response
             end
           rescue ActiveMerchant::Shipping::ResponseError => re
@@ -115,18 +117,19 @@ module Spree
 
         private
 
-        # Generates an array of Package objects based on the quantities and weights of the variants in the line items
-        def packages(order)
+        # Generates a Package object based on the quantities and weights of the variants in the line items
+        # for products with matching shipping category
+        def package(order)
           multiplier = Spree::ActiveShipping::Config[:unit_multiplier]
           default_weight = Spree::ActiveShipping::Config[:default_weight]
           
-          weight = order.line_items.inject(0) do |weight, line_item|
+          # this next line may not work, given the abstract calculable object type
+          weight = order.line_items.select {|item| item.product.shipping_category==self.shipping_method.shipping_category}.inject(0) do |weight, line_item|
             item_weight = line_item.variant.weight.present? ? line_item.variant.weight : default_weight
             weight + (line_item.quantity * item_weight * multiplier)
           end
           
-          package = Package.new(weight, [], :units => Spree::ActiveShipping::Config[:units].to_sym)
-          [package]
+          Package.new(weight, [], :units => Spree::ActiveShipping::Config[:units].to_sym)
         end
 
         def cache_key(order)
