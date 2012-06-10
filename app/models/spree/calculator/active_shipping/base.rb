@@ -124,7 +124,7 @@ module Spree
           default_weight = Spree::ActiveShipping::Config[:default_weight]
           
           # this next line may not work, given the abstract calculable object type
-          weight = order.line_items.select {|item| item.product.shipping_category==self.shipping_method.shipping_category}.inject(0) do |weight, line_item|
+          weight = order.line_items.select {|item| item.product.shipping_category==self.calculable.shipping_category}.inject(0) do |weight, line_item|
             item_weight = line_item.variant.weight.present? ? line_item.variant.weight : default_weight
             weight + (line_item.quantity * item_weight * multiplier)
           end
