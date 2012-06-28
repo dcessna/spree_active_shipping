@@ -18,13 +18,24 @@ module Spree
             order = object.first.order
           elsif object.is_a?(Shipment)
             order = object.order
+          elsif object.is_a?(ShippingElection)
+            order = object.order
           else
             order = object
           end
-          origin= Location.new(:country => Spree::ActiveShipping::Config[:origin_country],
-                               :city => Spree::ActiveShipping::Config[:origin_city],
-                               :state => Spree::ActiveShipping::Config[:origin_state],
-                               :zip => Spree::ActiveShipping::Config[:origin_zip])
+          
+          if object.is_a?(ShippingElection)
+            origin_addr = object.manufacturer.ship_address
+            origin = Location.new(:country => origin_addr.country.iso,
+                         :city => origin_addr.city,
+                         :state => origin_addr.state.abbr,
+                         :zip => origin_addr.zipcode)
+          else 
+            origin = Location.new(:country => Spree::ActiveShipping::Config[:origin_country],
+                         :city => Spree::ActiveShipping::Config[:origin_city],
+                         :state => Spree::ActiveShipping::Config[:origin_state],
+                         :zip => Spree::ActiveShipping::Config[:origin_zip])
+          end
 
           addr = order.ship_address
 
