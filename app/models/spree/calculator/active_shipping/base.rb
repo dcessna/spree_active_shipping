@@ -18,7 +18,7 @@ module Spree
             order = object.first.order
           elsif object.is_a?(Shipment)
             order = object.order
-            shipping_election = Shipment.shipping_election
+            shipping_election = object.shipping_election
           elsif object.is_a?(ShippingElection)
             order = object.order
             shipping_election = object
